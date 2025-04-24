@@ -1,4 +1,4 @@
-name: mongo-sharding-repl
+name: sharding-repl-cache
 
 services:
   
@@ -25,6 +25,19 @@ services:
     environment:
       MONGODB_URL: "mongodb://mongos_router"
       MONGODB_DATABASE_NAME: "somedb"
+      REDIS_URL: "redis://redis_1:6379"
+
+  redis_1:
+      image: "redis:latest"
+      container_name: redis_1
+      ports:
+        - "6379"
+      volumes:
+        - redis_1_data:/data
+      command: [ "redis-server" ]
+      networks:
+        app-network:
+          ipv4_address: 192.168.65.12
 
 ### Далее идет шардированная Монга
   #сервер конфигурации
@@ -249,3 +262,4 @@ volumes:
   shard21-data:
   shard22-data:
   shard23-data:
+  redis_1_data: {}
