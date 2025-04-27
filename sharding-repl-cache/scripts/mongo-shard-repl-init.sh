@@ -90,6 +90,3 @@ docker compose exec -T shard2_3 mongosh --port 27043 --quiet <<EOF
 use somedb;
 db.helloDoc.countDocuments();
 EOF
-
-curl -w "@curl-format.txt" -o /dev/null -s "http://localhost:8080/helloDoc/users"
-curl -w "@curl-format.txt" -o /dev/null -s "http://localhost:8080/helloDoc/users"
