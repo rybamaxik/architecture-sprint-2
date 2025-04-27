@@ -1,0 +1,265 @@
+name: sharding-repl-cache
+
+services:
+  
+  pymongo_api:
+    container_name: pymongo_api
+    build: 
+      context: api_app
+      dockerfile: Dockerfile
+    image: kazhem/pymongo_api:1.0.0
+    depends_on:
+      - configSrv
+      - shard1_1
+      - shard1_2
+      - shard1_3
+      - shard2_1
+      - shard2_2
+      - shard2_3
+      - mongos_router
+    ports:
+      - 8080:8080
+    networks:
+      app-network:
+        ipv4_address: 192.168.65.11
+    environment:
+      MONGODB_URL: "mongodb://mongos_router"
+      MONGODB_DATABASE_NAME: "somedb"
+      REDIS_URL: "redis://redis_1:6379"
+
+  redis_1:
+      image: "redis:latest"
+      container_name: redis_1
+      ports:
+        - "6379"
+      volumes:
+        - redis_1_data:/data
+      command: [ "redis-server" ]
+      networks:
+        app-network:
+          ipv4_address: 192.168.65.12
+
+### Далее идет шардированная Монга
+  #сервер конфигурации
+  configSrv:
+    image: mongo:latest # docker образ
+    container_name: configSrv 
+    restart: always
+    ports:
+      - "27019:27019"
+    networks:
+      app-network:
+        ipv4_address: 192.168.65.10
+    volumes:
+      - config-data:/data/db
+    command:
+      [
+        "--configsvr",  #запуск в режиме конфигурации
+        "--replSet",
+        "config_server",
+        "--bind_ip_all",
+        "--port",
+        "27019"
+      ] 
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 5s
+      start_period: 10s
+
+  #1-й шард 
+  shard1_1:
+    image: mongo:latest
+    container_name: shard1_1
+    restart: always
+    ports:
+      - "27031:27031"
+    networks:
+      app-network:
+        ipv4_address: 192.168.65.9
+    volumes:
+      - shard11-data:/data/db
+    command:
+      [
+        "--shardsvr", #запуск в режиме шардинга
+        "--replSet",
+        "shard1", #название реплики
+        "--bind_ip_all",
+        "--port",
+        "27031"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 5s
+      start_period: 10s
+
+  #1-й шард 
+  shard1_2:
+    image: mongo:latest
+    container_name: shard1_2
+    restart: always
+    ports:
+      - "27032:27032"
+    networks:
+      app-network:
+        ipv4_address: 192.168.65.8
+    volumes:
+      - shard12-data:/data/db
+    command:
+      [
+        "--shardsvr", #запуск в режиме шардинга
+        "--replSet",
+        "shard1", #название реплики
+        "--bind_ip_all",
+        "--port",
+        "27032"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 5s
+      start_period: 10s
+
+  #1-й шард 
+  shard1_3:
+    image: mongo:latest
+    container_name: shard1_3
+    restart: always
+    ports:
+      - "27033:27033"
+    networks:
+      app-network:
+        ipv4_address: 192.168.65.7
+    volumes:
+      - shard13-data:/data/db
+    command:
+      [
+        "--shardsvr", #запуск в режиме шардинга
+        "--replSet",
+        "shard1", #название реплики
+        "--bind_ip_all",
+        "--port",
+        "27033"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 5s
+      start_period: 10s
+
+  #2-й шард 
+  shard2_1:
+    image: mongo:latest
+    container_name: shard2_1
+    restart: always
+    ports:
+      - "27041:27041"
+    networks:
+      app-network:
+        ipv4_address: 192.168.65.6
+    volumes:
+      - shard21-data:/data/db
+    command:
+      [
+        "--shardsvr", #запуск в режиме шардинга
+        "--replSet",
+        "shard2", #название реплик
+        "--bind_ip_all", # обратите внимание - она отличается от реплики 1-го шарда
+        "--port",
+        "27041"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 5s
+      start_period: 10s
+  
+  #2-й шард 
+  shard2_2:
+    image: mongo:latest
+    container_name: shard2_2
+    restart: always
+    ports:
+      - "27042:27042"
+    networks:
+      app-network:
+        ipv4_address: 192.168.65.5
+    volumes:
+      - shard22-data:/data/db
+    command:
+      [
+        "--shardsvr", #запуск в режиме шардинга
+        "--replSet",
+        "shard2", #название реплик
+        "--bind_ip_all", # обратите внимание - она отличается от реплики 1-го шарда
+        "--port",
+        "27042"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 5s
+      start_period: 10s
+  
+  #2-й шард 
+  shard2_3:
+    image: mongo:latest
+    container_name: shard2_3
+    restart: always
+    ports:
+      - "27043:27043"
+    networks:
+      app-network:
+        ipv4_address: 192.168.65.4
+    volumes:
+      - shard23-data:/data/db
+    command:
+      [
+        "--shardsvr", #запуск в режиме шардинга
+        "--replSet",
+        "shard2", #название реплик
+        "--bind_ip_all", # обратите внимание - она отличается от реплики 1-го шарда
+        "--port",
+        "27043"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 5s
+      start_period: 10s
+  
+  #роутер
+  mongos_router:
+    image: mongo:latest
+    container_name: mongos_router
+    restart: always
+    ports:
+      - "27017:27017"
+    networks:
+      app-network:
+        ipv4_address: 192.168.65.3
+    command:
+      [
+        "mongos", #обычная mongo в режиме роутера
+        "--configdb", 
+        "config_server/configSrv:27019", #передача данных сервера конфигурации
+        "--bind_ip_all",
+        "--port",
+        "27017"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 5s
+      start_period: 10s
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.65.0/24
+
+volumes:
+  config-data:
+  shard11-data:
+  shard12-data:
+  shard13-data:
+  shard21-data:
+  shard22-data:
+  shard23-data:
+  redis_1_data: {}
